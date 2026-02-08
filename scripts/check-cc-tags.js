@@ -132,7 +132,7 @@ async function main() {
           console.log('   💬 Posting response as comment...');
           await checkvist(`/checklists/${checklist.id}/tasks/${task.id}/comments.json`, {
             method: 'POST',
-            body: JSON.stringify({ comment: response }),
+            body: JSON.stringify({ comment: { comment: response } }),
           });
 
           // Uppdatera tag från #cc till #cc-svar
