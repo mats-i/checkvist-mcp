@@ -2,6 +2,12 @@
 
 import fetch from 'node-fetch';
 import { config } from 'dotenv';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Ladda miljövariabler
 config();
@@ -82,15 +88,37 @@ Ditt svar ska börja med "Claude: " och vara en kommentar som postas direkt på 
 async function main() {
   console.log('🔍 Checking for #cc tags in Checkvist...');
 
+  const timestampFile = join(__dirname, '.last-check-timestamp');
+  let lastCheckTime = null;
+
+  // Läs senaste körningens timestamp
+  if (existsSync(timestampFile)) {
+    try {
+      lastCheckTime = readFileSync(timestampFile, 'utf8').trim();
+      console.log(`⏱️  Last check: ${lastCheckTime}`);
+    } catch (e) {
+      // Ignorera om filen inte kan läsas
+    }
+  }
+
   try {
     // 1. Hämta alla checklistor
     const checklists = await checkvist('/checklists.json');
     console.log(`📋 Found ${checklists.length} checklists`);
 
+    // Filtrera checklistor som uppdaterats sedan sist
+    const checklistsToCheck = lastCheckTime
+      ? checklists.filter(cl => cl.user_updated_at > lastCheckTime)
+      : checklists;
+
+    if (lastCheckTime && checklistsToCheck.length < checklists.length) {
+      console.log(`⚡ Skipping ${checklists.length - checklistsToCheck.length} unchanged checklists`);
+    }
+
     let totalProcessed = 0;
 
-    // 2. För varje checklista
-    for (const checklist of checklists) {
+    // 2. För varje checklista som behöver kollas
+    for (const checklist of checklistsToCheck) {
       console.log(`\n📝 Checking checklist: ${checklist.name} (ID: ${checklist.id})`);
 
       // 3. Hämta alla tasks
@@ -156,6 +184,11 @@ async function main() {
     }
 
     console.log(`\n✅ Finished! Processed ${totalProcessed} task(s) with #cc tag`);
+
+    // Spara nuvarande timestamp för nästa körning
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' +0000';
+    writeFileSync(timestampFile, now, 'utf8');
+    console.log(`💾 Saved timestamp: ${now}`);
 
   } catch (error) {
     console.error('❌ Fatal error:', error.message);
