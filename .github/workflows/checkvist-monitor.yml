@@ -1,0 +1,30 @@
+name: Checkvist CC Monitor
+
+on:
+  schedule:
+    # Körs var 5:e minut
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Tillåt manuell körning
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check for #cc tags and respond
+        env:
+          CHECKVIST_USERNAME: ${{ secrets.CHECKVIST_USERNAME }}
+          CHECKVIST_API_KEY: ${{ secrets.CHECKVIST_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/check-cc-tags.js
