@@ -143,7 +143,7 @@ async function main() {
 
           await checkvist(`/checklists/${checklist.id}/tasks/${task.id}.json`, {
             method: 'PUT',
-            body: JSON.stringify({ tags: newTags }),
+            body: JSON.stringify({ task: { tags: newTags } }),
           });
 
           console.log('   ✅ Done!');
