@@ -165,9 +165,10 @@ async function main() {
 
           // Uppdatera tag från #cc till #cc-svar
           console.log('   🏷️  Updating tag to #cc-svar...');
-          const newTags = task.tags_as_text
-            .replace('cc', 'cc-svar')
-            .trim();
+          const tags = task.tags_as_text.split(',').map(t => t.trim());
+          const newTags = tags
+            .map(tag => tag === 'cc' ? 'cc-svar' : tag)
+            .join(', ');
 
           await checkvist(`/checklists/${checklist.id}/tasks/${task.id}.json`, {
             method: 'PUT',
